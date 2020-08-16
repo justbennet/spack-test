@@ -27,9 +27,35 @@ to build this package.
 $ spack install gcc@8.2.0 -j 4
 ```
 
-Once that has completed, we will add it as an available compiler with
+This is where it gets tricky.  Your compilers are now defined in
+`~/.spack/linux/compilers.yaml`, which doesn't help your site.  So, you 
+must first remove that file, then run
 
 ```
-$ spack compiler add $(spack location -i gcc@8.3.0)
+$ rm ~/.spack/linux/compilers.yaml
+$ spack compiler find --scope site
+==> Added 1 new compiler to /sw/core/spack/etc/spack/compilers.yaml
+    gcc@4.8.5
+==> Compilers are defined in the following files:
+    /sw/core/spack/etc/spack/compilers.yaml
+```
+
+Then we can come back to the tutorial and add 
+
+```
+$ spack compiler add --scope site $(spack location -i gcc@8.2.0)
+==> Added 1 new compiler to /sw/core/spack/etc/spack/compilers.yaml
+    gcc@8.2.0
+==> Compilers are defined in the following files:
+    /sw/core/spack/etc/spack/compilers.yaml
+```
+and verify that we have both with
+
+```
+$ spack compilers
+==> Available compilers
+-- gcc centos7-x86_64 -------------------------------------------
+gcc@8.2.0  gcc@4.8.5
+
 ```
 
