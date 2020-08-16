@@ -100,4 +100,4 @@ for both compilers, they should not produce any problems with Spack
 configuration beyond installing and registering them, so we can concentrate
 on the _structure_ of our site.
 
-
+[Install Spack and the first compiler](install_spack.md)
