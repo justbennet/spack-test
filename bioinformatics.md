@@ -142,3 +142,128 @@ Here are some open questions.
    rather than building the most recent.
 
 There are more, but that's plenty for now.
+
+## Update 22 Feb 2022
+
+Asked in Slack about how to make 'reproducible Spack'.  Here is,
+essentially a transcript.
+
+**[Bennet  5:27:31]**
+
+We're working on creating a Spack environment specifically for
+bioinformatics.  We'd like to set it up as if it were a full site.
+
+We are doing this on RH 8, which is updating the minor version
+of GCC 8 (while it can be), so we started with gcc-8.3 but
+after an update now have gcc-8.5.
+
+That makes depending on the system installed compiler tenuous,
+so we would like to use Spack to install GCC 10.3.0, then
+remove from Spack all traces of GCC 8.
+
+Is that doable?
+
+We'd really like to be able to create the site configuration
+files and write a script (or a couple of scripts) that would
+clone Spack and replicate the environment on another system.
+
+Am I right that this is done by first installing what is wanted,
+then creating an environment, adding the desired packages to
+it, then from inside the environment reconcretizing, finally
+using the resulting spack.yaml to reproduce on another machine?
+
+Would the other machine bootstrap its first (Spack installed)
+compiler from the spack.yaml file?
+
+I hope that was coherent.
+
+**[becker33  5:45:52]**
+
+I think that what you want is:
+
+1. Set `config:install_missing_compilers:true`. That will make
+   sure that Spack will always build 10.3.0 if it’s not
+   already present.
+
+2. Configure all of the specs in your environment to 
+   `%gcc@10.3.0`. You can accomplish that with a matrix:
+
+   ```
+   spack:
+     specs:
+     - matrix:
+       - [foo, bar+baz, corge garply=qux]
+       - ['%gcc@10.3.0']
+    ```
+
+   or by listing the specs out separately.
+
+3. If you want the `gcc` compiler to also be a spec in the
+   environment, list it too:
+   
+   ```
+   spack:
+     specs:
+     - matrix:
+     ...
+     - gcc@10.3.0
+   ```
+
+4. any constraints you want on gcc, configure them as preferences
+   in the packages section.
+
+5. After you install this environment, then spack compiler remove
+   gcc@8 so that later installs won’t pick up the wrong one. (edited) 
+
+**[becker33  5:50:14]**
+
+So all in all, you would have:
+
+```
+spack:
+  specs:
+  - matrix:
+    - [foo, bar+baz, corge garply=qux]
+    - ['%gcc@10.2.0']
+  - gcc@10.2.0  # optional if you want its spec visible
+
+  config:
+    install_missing_compilers: true
+
+  packages:
+    gcc:
+      # Any GCC variants you care about
+      
+```
+
+Then your process on a new machine would look like:
+
+```
+spack env activate /path/to/spack.yaml
+spack install
+spack -E compiler rm gcc@8
+```
+
+or
+
+```
+spack -e /path/to/spack.yaml install
+spack compiler rm gcc@8
+```
+
+The major difference between the two forms is that in the
+former, the environment described by your `spack.yaml`
+file is left active after you finish, whereas in the
+latter it is left inactive.
+
+**[Bennet  6:03:18]**
+
+That is super cool!  Thanks a ton.  We should add whatever
+`config.yaml`, `repos.yaml`, `modules.yaml`, to 
+`$spackroot/etc/spack` for site customization first, the
+embark on the process above?  Yes?
+
+**[becker33  6:13:32]**
+
+Yep, assuming you want those site customizations to apply to
+how the packages in the environment are built.
